@@ -29,6 +29,16 @@ set -o pipefail
 # --------------------------------------------------------------------
 # common : start
 # --------------------------------------------------------------------
+# @info     logging functions
+function common::log() { echo "[info]: $@" 1>&2; }
+function common::warn() { echo "[warn]: $@" 1>&2; }
+function common::error() { echo "[error]: $@" 1>&2; }
+function common::error_exit() { echo "[error]: $@" 1>&2; exit 1;}
+# @info     string functions
+function common::trimall() { echo $(echo "$@" | tr -d '[ \t]' | tr 'A-Z' 'a-z'); }
+function common::lowercase() { echo "$@" | sed "y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/"; }
+function common::uppercase() { echo "$@" | sed "y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/"; }
+
 ## begin ## meta-data
 readonly __APPNAME=$( basename "${BASH_SOURCE[0]}" )
 readonly __APPVERSION=1.0
@@ -38,17 +48,12 @@ readonly __CURRDIR=$PWD
 readonly __TIMESTAMP=$(date +%Y%m%d%H%M%S${RANDOM:0-2})
 ## end ## meta-data
 
-# @info     logging functions
-function common::log() { echo "[info]: $@" 1>&2; }
-function common::warn() { echo "[warn]: $@" 1>&2; }
-function common::error() { echo "[error]: $@" 1>&2; }
-function common::error_exit() { echo "[error]: $@" 1>&2; exit 1;}
-
 ## begin ## data
 readonly __DESCRIPTION="script to configure environment"
 readonly __ENVFILE=.env
 readonly __SDKRCFILE=.sdkmanrc
-readonly __PREREQ=(cat sed curl)
+readonly __BASETMPL=https://raw.githubusercontent.com/budhash/templatek/main/template
+readonly __PREREQ=(cat sed curl envsubst)
 ## end ## data
 
 function _init(){
@@ -79,11 +84,16 @@ function load_config(){
 function validate_config(){
     local _defaultProjName=$( basename "$PROJ_PATH" )
     local _defaultProjLic="MIT"
+    local _defaultYear=$(date +"%Y")
 
-    [[ -z "$PROJ_NAME" ]] && export PROJ_NAME=$(common::warn "project name not specified - using forder name: $_defaultProjName" ; echo $_defaultProjName)
+    [[ -z "$PROJ_NAME" ]] && export PROJ_NAME=$(common::warn "project name not specified - using folder name: $_defaultProjName" ; echo $_defaultProjName)
     [[ -z "$PROJ_GROUP" ]] && export PROJ_GROUP=$( common::warn "project group not specified - using project name: com.${_defaultProjName}" ; echo "com.${PROJ_NAME}" )
     [[ -z "$PROJ_LICENSE" ]] && export PROJ_LICENSE=$( common::warn "project license not specified - using: $_defaultProjLic" ; echo $_defaultProjLic )
     
+    [[ -z "$NAME" ]] && export NAME=$(common::warn "name not specified - using project name: $_defaultProjName" ; echo $_defaultProjName)
+    [[ -z "$YEAR" ]] && export YEAR=$(common::warn "year not specified - using current: $_defaultYear" ; echo $_defaultYear)
+
+
     [[ -z "$SDKMAN_PATH" ]] && common::error_exit "SDKMAN_PATH not specified"
     [[ -z "$JDK_VERSION" ]] && common::error_exit "JDK_VERSION not specified"
     [[ -z "$KOTLIN_VERSION" ]] && common::error_exit "KOTLIN_VERSION not specified"
@@ -302,9 +312,10 @@ function _generate_gradle(){
     _gradle_wrapper
 }
 
-function _generate_license(){    
+function _generate_license(){
+    local _lic=$(common::uppercase $PROJ_LICENSE)
     #template:LICENSE
-    _gen_from_template LICENSE "$PROJ_PATH"
+    _gen_from_template LICENSE "$PROJ_PATH" "license/$_lic"
 }
 
 function _generate_docs(){
@@ -326,7 +337,9 @@ function _gen_from_template(){
     fi
 
     if [ ! -z "$3" ]; then
-        common::log "sourcing from template: $3"
+        local _url=$__BASETMPL/$3
+        common::log "sourcing from template: $_url"
+        curl -s $_url | envsubst > ${_filePath}
     fi
 }
 
