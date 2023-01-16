@@ -1,0 +1,335 @@
+#!/usr/bin/env bash
+
+# MIT License
+
+# Copyright (c) 2023 Budhaditya
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+set -o errexit
+#set -o nounset
+set -o pipefail
+
+# --------------------------------------------------------------------
+# common : start
+# --------------------------------------------------------------------
+## begin ## meta-data
+readonly __APPNAME=$( basename "${BASH_SOURCE[0]}" )
+readonly __APPVERSION=1.0
+readonly __BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+readonly __BASEDIRNAME=$( basename "$__BASEDIR" )
+readonly __CURRDIR=$PWD
+readonly __TIMESTAMP=$(date +%Y%m%d%H%M%S${RANDOM:0-2})
+## end ## meta-data
+
+# @info     logging functions
+function common::log() { echo "[info]: $@" 1>&2; }
+function common::warn() { echo "[warn]: $@" 1>&2; }
+function common::error() { echo "[error]: $@" 1>&2; }
+function common::error_exit() { echo "[error]: $@" 1>&2; exit 1;}
+
+## begin ## data
+readonly __DESCRIPTION="script to configure environment"
+readonly __ENVFILE=.env
+readonly __SDKRCFILE=.sdkmanrc
+readonly __PREREQ=(cat sed curl)
+## end ## data
+
+function _init(){
+    # verify required binaries exist
+    for binary in "${__PREREQ[@]}"; do
+        if type $binary | grep -q " not found";then
+            common::error_exit "binary not found on the path : $binary"
+        fi
+    done
+}
+
+function load_config(){
+    local configFile=(${1//=/ })
+    [[ -e $configFile ]] || common::error_exit "config file not found : [-e $configFile] - please specify .env file path"
+ 
+    [[ -z "$2" ]] && local _basePath="$__CURRDIR" || local _basePath="$2"
+    export PROJ_PATH=$_basePath
+
+    while read line; do
+        if [[ ${line:0:1} != "#" ]]; then
+            key=$(echo $line | cut -d '=' -f 1)
+            value=$(echo $line | cut -d '=' -f 2)
+            export $key=$value
+        fi
+    done < $configFile
+}
+
+function validate_config(){
+    local _defaultProjName=$( basename "$PROJ_PATH" )
+    local _defaultProjLic="MIT"
+
+    [[ -z "$PROJ_NAME" ]] && export PROJ_NAME=$(common::warn "project name not specified - using forder name: $_defaultProjName" ; echo $_defaultProjName)
+    [[ -z "$PROJ_GROUP" ]] && export PROJ_GROUP=$( common::warn "project group not specified - using project name: com.${_defaultProjName}" ; echo "com.${PROJ_NAME}" )
+    [[ -z "$PROJ_LICENSE" ]] && export PROJ_LICENSE=$( common::warn "project license not specified - using: $_defaultProjLic" ; echo $_defaultProjLic )
+    
+    [[ -z "$SDKMAN_PATH" ]] && common::error_exit "SDKMAN_PATH not specified"
+    [[ -z "$JDK_VERSION" ]] && common::error_exit "JDK_VERSION not specified"
+    [[ -z "$KOTLIN_VERSION" ]] && common::error_exit "KOTLIN_VERSION not specified"
+    [[ -z "$GRADLE_VERSION" ]] && common::error_exit "GRADLE_VERSION not specified"
+
+    common::log "proj [name:$PROJ_NAME | group:$PROJ_GROUP | license:$PROJ_LICENSE | path:$PROJ_PATH]"
+    common::log "env [java:$JDK_VERSION | kotlin:$KOTLIN_VERSION | gradle:$GRADLE_VERSION]"
+
+    local _sdkmanIBasePath=$(eval echo $SDKMAN_PATH)
+    local _sdkmanInitPath=$_sdkmanIBasePath/bin/sdkman-init.sh
+    if [ -e $_sdkmanInitPath ]; then
+        source $_sdkmanInitPath
+        if type sdk | grep -q " not found";then
+            common::error_exit "sdkman not found on the path : $_sdkmanIBasePath"
+        fi
+        export SDKMAN_CONF=$_sdkmanIBasePath/etc/config
+    else
+        common::error_exit "sdkman not found at : $_sdkmanIBasePath"
+    fi
+}
+
+function env_install(){
+    _sdk_autoanswer_enable
+    _java_install
+    _kotlin_install
+    _gradle_install
+    _sdk_autoanswer_disable
+}
+
+function env_config(){
+    local _confPath="$PROJ_PATH/$__SDKRCFILE"
+    echo "# enable auto-env through the sdkman_auto_env config [$SDKMAN_CONF]"> $_confPath
+    echo java=$JDK_VERSION >> $_confPath
+    echo kotlin=$KOTLIN_VERSION >> $_confPath
+    echo gradle=$GRADLE_VERSION >> $_confPath
+
+    common::log "enabling sdkman: auto-env"
+    _sdk_autoenv_enable
+}
+
+function folder_generate_root(){
+    mkdir -p $PROJ_PATH
+}
+
+function folder_generate_all(){
+    common::log "generating folder structure"
+    _folder_generate_misc
+    _folder_generate_source
+
+}
+    
+function gradle_generate(){
+    _generate_gradle
+}
+
+function config_generate(){
+    _generate_misc_config
+}
+
+function docs_generate(){
+    _generate_license
+    _generate_docs
+}
+
+function write_final_congig(){
+    local _configFile="${PROJ_PATH}/.env"
+    echo "
+# env details
+SDKMAN_PATH=$SDKMAN_PATH
+JDK_VERSION=$JDK_VERSION
+KOTLIN_VERSION=$KOTLIN_VERSION
+GRADLE_VERSION=$GRADLE_VERSION
+# project details
+PROJ_NAME=$PROJ_NAME
+PROJ_GROUP=$PROJ_GROUP
+PROJ_LICENSE=$PROJ_LICENSE
+" > $_configFile
+}
+
+function usage() {
+    if [ "$1" != "error" ]; then
+        echo "$__APPNAME $__APPVERSION, $__DESCRIPTION"
+    fi
+    cat << EOF
+Usage: $__APPNAME [OPTIONS]... [commands1] [commands2]
+Options:
+-------
+    -h                          
+        show this message
+        
+    -e <env_file_path> [default : ./env]
+        .env file with PROJ_NAME/JDK_VERSION/KOTLIN_VERSION/GRADLE_VERSION
+        
+    -b <base_path> [default : current_directory]
+        project base path
+   
+EOF
+    if [ "$1" == "error" ]; then
+        exit 1
+    fi
+}
+
+function main() {
+    local envFilePath=./$__ENVFILE
+    local basePath=$__CURRDIR
+    # parse commandline
+    while getopts "he:b:" OPTION; do
+        case "$OPTION" in
+            h) usage;;
+            e) envFilePath=$OPTARG;;
+            b) basePath=$OPTARG;;
+            ?) usage error;;
+         esac
+    done
+    shift $((OPTIND-1))
+
+    load_config "$envFilePath" "$basePath"
+    validate_config
+    #env_install
+    folder_generate_root
+    env_config
+    folder_generate_all
+    gradle_generate
+    config_generate
+    docs_generate
+    write_final_congig
+}
+
+function _sdk_autoanswer_disable(){
+    sed -i -e 's/sdkman_auto_answer=.*$/sdkman_auto_answer=false/g' $SDKMAN_CONF
+}
+
+function _sdk_autoanswer_enable(){
+    sed -i -e 's/sdkman_auto_answer=.*$/sdkman_auto_answer=true/g' $SDKMAN_CONF
+}
+
+function _sdk_autoenv_disable(){
+    sed -i -e 's/sdkman_auto_env=.*$/sdkman_auto_env=false/g' $SDKMAN_CONF
+}
+
+function _sdk_autoenv_enable(){
+    sed -i -e 's/sdkman_auto_env=.*$/sdkman_auto_env=true/g' $SDKMAN_CONF
+}
+
+function _java_install(){
+    local _version=$JDK_VERSION
+    common::log "installing java: $_version"
+    sdk install java $_version
+}
+
+function _kotlin_install(){
+    local _version=$KOTLIN_VERSION
+    common::log "installing kotlin: $_version"
+    sdk install kotlin $_version
+}
+
+function _gradle_install(){
+    local _version=$GRADLE_VERSION
+    common::log "installing gradle: $_version"
+    sdk install gradle $_version
+}
+
+function _gradle_wrapper() {
+    local _basePath="$PROJ_PATH"
+
+    common::log "${_basePath}/gradlew"
+    if [ ! -e ${_basePath}/gradlew ]; then
+        common::log "generating gradle wrapper"
+        (cd $_basePath && gradle wrapper --warning-mode all)
+    else
+        common::log "updating gradle wrapper"
+        (cd $_basePath && ./gradlew wrapper --gradle-version $GRADLE_VERSION)
+    fi
+}
+
+function _folder_generate_source(){
+    local _base=$PROJ_PATH/$PROJ_NAME
+    local _projFolder=$(echo $PROJ_GROUP | tr . /)
+    mkdir -p ${_base}
+
+    # basic folder structure
+    mkdir -p ${_base}/src/main/{kotlin,resources}
+    mkdir -p ${_base}/src/test/{kotlin,resources}
+
+    # project folder structure
+    mkdir -p ${_base}/src/main/kotlin/${_projFolder}
+    mkdir -p ${_base}/src/test/kotlin/${_projFolder}
+}
+
+function _folder_generate_misc(){
+    # gradle
+    mkdir -p "${PROJ_PATH}/gradle"
+
+    # misc
+    mkdir -p $PROJ_PATH/{doc,config,scripts}
+}
+
+function _generate_misc_config(){
+    #template:.gitignore
+    _gen_from_template .gitignore "$PROJ_PATH"
+
+    #template:Makefile
+    _gen_from_template Makefile "$PROJ_PATH"
+}
+
+function _generate_gradle(){
+    #template:settings.gradle.kts
+    _gen_from_template settings.gradle.kts "$PROJ_PATH"
+
+    #template:gradle.properties
+    _gen_from_template gradle.properties "$PROJ_PATH"
+
+    #template:libs.versions.toml
+    _gen_from_template libs.versions.toml "$PROJ_PATH/gradle"
+
+    _gradle_wrapper
+}
+
+function _generate_license(){    
+    #template:LICENSE
+    _gen_from_template LICENSE "$PROJ_PATH"
+}
+
+function _generate_docs(){
+    #template:README.md
+    _gen_from_template README.md "$PROJ_PATH"
+
+    #template:TODO.md
+    _gen_from_template TODO.md "$PROJ_PATH/doc"
+}
+
+function _gen_from_template(){
+    [[ -z "$1" ]] && return || local _file="$1"
+    [[ -z "$2" ]] && return || local _basePath="$2"
+
+    local _filePath=${_basePath}/${_file}
+    if [ ! -e ${_filePath} ]; then
+        common::log "generating ${_file} : ${_filePath}"
+        touch ${_filePath}
+    fi
+
+    if [ ! -z "$3" ]; then
+        common::log "sourcing from template: $3"
+    fi
+}
+
+_init
+main $@
+exit 0
