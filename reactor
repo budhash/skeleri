@@ -307,7 +307,7 @@ function _generate_misc_config(){
     _gen_from_template .gitattributes "$PROJ_PATH" ".gitattributes"
 
     #template:Makefile
-    _gen_from_template Makefile "$PROJ_PATH"
+    _gen_from_template Makefile "$PROJ_PATH" "Makefile"
 }
 
 function _generate_gradle(){

@@ -37,8 +37,14 @@ gradle-version:
 
 versions: jdk-version kotlin-version gradle-version
 
+build:
+	@ $(GRD) build
+
+test:
+	@ $(GRD) test
+
 gradle-wrapper-update:
 	@ $(GRD) wrapper --gradle-version `cat .env | grep GRADLE_VERSION | sed -n 's/^GRADLE_VERSION=//p'`
 
 gradle-version-update:
-    @ $(GRD) versionCatalogUpdate
+	@ $(GRD) versionCatalogUpdate
