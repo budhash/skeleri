@@ -43,8 +43,16 @@ build:
 test:
 	@ $(GRD) test
 
+lint-check:
+	@ $(GRD) ktlintCheck
+
+lint-format:
+	@ $(GRD) ktlintFormat
+
 gradle-wrapper-update:
 	@ $(GRD) wrapper --gradle-version `cat .env | grep GRADLE_VERSION | sed -n 's/^GRADLE_VERSION=//p'`
 
 gradle-version-update:
 	@ $(GRD) versionCatalogUpdate
+
+	

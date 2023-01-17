@@ -1,9 +1,9 @@
-# TemplateK
+# sKeleri
 
-Simple project structure generator for kotlin projects
+Simple project scaffold generator for kotlin projects
 
 ## Usage
 
 ```
-./reactor -e .env -b ./hellok
+./skeleri -e .env -b ./hellok
 ```

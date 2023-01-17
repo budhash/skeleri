@@ -21,12 +21,12 @@ dependencies {
     implementation(libs.bundles.testj)
 }
 
-tasks.test {
-    useJUnitPlatform()
+kotlin {
+    jvmToolchain(17)
 }
 
-kotlin {
-    jvmToolchain(11)
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.withType<Test> {

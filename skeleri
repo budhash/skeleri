@@ -52,7 +52,7 @@ readonly __TIMESTAMP=$(date +%Y%m%d%H%M%S${RANDOM:0-2})
 readonly __DESCRIPTION="script to configure environment"
 readonly __ENVFILE=.env
 readonly __SDKRCFILE=.sdkmanrc
-readonly __BASETMPL=https://raw.githubusercontent.com/budhash/templatek/main/template
+readonly __BASETMPL=https://raw.githubusercontent.com/budhash/skeleri/main/template
 readonly __PREREQ=(cat sed curl envsubst)
 ## end ## data
 
