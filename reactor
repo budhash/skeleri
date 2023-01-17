@@ -323,6 +323,9 @@ function _generate_gradle(){
     #template:build.gradle.kts
     _gen_from_template build.gradle.kts "$PROJ_PATH" "gradle/build.gradle.kts"
 
+    #template:proj/build.gradle.kts
+    _gen_from_template build.gradle.kts "${PROJ_PATH}/${PROJ_NAME}" "gradle/proj.build.gradle.kts"
+
     _gradle_wrapper
 }
 

@@ -59,7 +59,7 @@ opentest4j = { module = "org.opentest4j:opentest4j", version.ref = "opentest4j" 
 # usage in `build.gradle.kts`
 # `implementation(libs.bundles.junit-jupiter)`
 [bundles]
-junit-jupiter = ["junit-jupiter-api", "junit-jupiter-engine"]
+testj = ["junit-jupiter-api", "junit-jupiter-engine", "opentest4j", "assertj-core"]
 
 # declare plugin aliases
 # usage in `build.gradle.kts`
