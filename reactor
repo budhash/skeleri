@@ -380,7 +380,7 @@ function _get_source_main(){
 function _get_source_test(){
     local _base=$PROJ_PATH/$PROJ_NAME
     local _projFolder=$(echo $PROJ_GROUP | tr . /)
-    echo ${_base}/src/main/kotlin/${_projFolder}
+    echo ${_base}/src/test/kotlin/${_projFolder}
 }
 
 _init

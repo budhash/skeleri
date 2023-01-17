@@ -1,5 +1,7 @@
 // version catalog : `gradle/libs.versions.toml`
 
+@Suppress("DSL_SCOPE_VIOLATION")
+
 plugins {
     application
     alias(libs.plugins.kotlin.jvm)
