@@ -1,0 +1,76 @@
+# gradle version catalog : https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
+
+# declare shared version aliases
+[versions]
+#java = "1.8"
+kotlin = "1.8.0"
+detekt-gradle-plugin = "1.17.0"
+ktlint-gradle = "0.48.1"
+opentest4j = "1.2.0"
+junit-platform = "1.7.2"
+junit-jupiter = "5.8.2"
+assertj-core = "3.18.0"
+mockk = "1.12.2"
+dokka-gradle-plugin = "1.7.20"
+kotlinx-serialization = "1.3.3"
+test-retry = "1.5.0"
+gradle-test-logger-plugin ="3.2.0"
+## plugins
+# version management
+gradle-versions-update = "0.7.0"
+gradle-versions = "0.44.0"
+# https://github.com/gradle-nexus/publish-plugin/releases
+#publish-plugin = "1.1.0"
+# [Gradle Shadow](https://github.com/johnrengelman/shadow/releases)
+#shadow = "7.1.2"
+
+# declare shared dependency coordinates
+# usage in `build.gradle.kts`
+# `implementation(libs.greetings.mockk)`
+[libraries]
+#detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt-gradle-plugin" }
+ktlint-gradle = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint-gradle" }
+#ktlint = { module = "com.pinterest:ktlint", version.ref = "ktlint" }
+# serialization
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+# gradle plugins
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+#gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "gradle-versions" }
+gradle-test-logger-plugin = { module = "com.adarshr:gradle-test-logger-plugin", version.ref = "gradle-test-logger-plugin" }
+# doc
+dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka-gradle-plugin" }
+
+# testing
+junit-platform-testkit = { module = "org.junit.platform:junit-platform-testkit", version.ref = "junit-platform" }
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+junit-platform-api = { module = "org.junit.platform:junit-platform-suite-api", version.ref = "junit-platform" }
+junit-platform-commons = { module = "org.junit.platform:junit-platform-commons", version.ref = "junit-platform" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-core" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+opentest4j = { module = "org.opentest4j:opentest4j", version.ref = "opentest4j" }
+# publish
+#nexus = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexus" }
+#shadow = { module = "gradle.plugin.com.github.jengelman.gradle.plugins:shadow", version.ref = "shadow" }
+
+# declare bundles to group related dependencies
+# usage in `build.gradle.kts`
+# `implementation(libs.bundles.junit-jupiter)`
+[bundles]
+junit-jupiter = ["junit-jupiter-api", "junit-jupiter-engine"]
+
+# declare plugin aliases
+# usage in `build.gradle.kts`
+# plugins {
+#   alias(libs.plugins.kotlin.jvm)
+# }
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+gradle-versions-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "gradle-versions-update" }
+gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+#detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+#fatJar = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }
+#test-retry = { id = "org.gradle.test-retry", version.ref = "test-retry"  }
