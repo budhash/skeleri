@@ -17,10 +17,6 @@ application {
     applicationName = rootProject.name
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(libs.bundles.testj)
 }
