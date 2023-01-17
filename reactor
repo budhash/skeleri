@@ -321,7 +321,7 @@ function _generate_gradle(){
     _gen_from_template libs.versions.toml "$PROJ_PATH/gradle" "gradle/libs.versions.toml"
 
     #template:build.gradle.kts
-    _gen_from_template build.gradle.kts "$PROJ_PATH" #"gradle/build.gradle.kts"
+    _gen_from_template build.gradle.kts "$PROJ_PATH" "gradle/build.gradle.kts"
 
     _gradle_wrapper
 }
@@ -337,13 +337,13 @@ function _generate_sample_code(){
     local _testPath=$(_get_source_test)
 
     #template:Main.kt
-    _gen_from_template Main.kt "$_mainPath" #"code/Main.kt"
+    _gen_from_template Main.kt "$_mainPath" "code/Main.kt"
 
     #template:Utils.kt
-    _gen_from_template Utils.kt "$_mainPath" #"code/Utils.kt"
+    _gen_from_template Utils.kt "$_mainPath" "code/Utils.kt"
 
     #template:UtilsTest.kt
-    _gen_from_template UtilsTest.kt "$_testPath" #"code/UtilsTest.kt"
+    _gen_from_template UtilsTest.kt "$_testPath" "code/UtilsTest.kt"
 }
 
 function _generate_docs(){

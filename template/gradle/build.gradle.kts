@@ -4,7 +4,7 @@ plugins {
     application
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.gradle.versions)
-    alias(libs.plugins.catalog.update)
+    alias(libs.plugins.gradle.versions.update)
 }
 
 group = "${PROJ_GROUP}"
