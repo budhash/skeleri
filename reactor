@@ -99,8 +99,11 @@ function validate_config(){
     [[ -z "$KOTLIN_VERSION" ]] && common::error_exit "KOTLIN_VERSION not specified"
     [[ -z "$GRADLE_VERSION" ]] && common::error_exit "GRADLE_VERSION not specified"
 
-    common::log "proj [name:$PROJ_NAME | group:$PROJ_GROUP | license:$PROJ_LICENSE | path:$PROJ_PATH]"
-    common::log "env [java:$JDK_VERSION | kotlin:$KOTLIN_VERSION | gradle:$GRADLE_VERSION]"
+    common::log "----------------------------------------------"
+    common::log "proj   [name:$PROJ_NAME | group:$PROJ_GROUP | license:$PROJ_LICENSE | path:$PROJ_PATH]"
+    common::log "env    [java:$JDK_VERSION | kotlin:$KOTLIN_VERSION | gradle:$GRADLE_VERSION]"
+    common::log "github [user:$GITHUB_USER | repo:$GITHUB_REPO]"
+    common::log "----------------------------------------------"
 
     local _sdkmanIBasePath=$(eval echo $SDKMAN_PATH)
     local _sdkmanInitPath=$_sdkmanIBasePath/bin/sdkman-init.sh
@@ -151,6 +154,10 @@ function gradle_generate(){
 
 function config_generate(){
     _generate_misc_config
+}
+
+function code_generate(){
+    _generate_sample_code
 }
 
 function docs_generate(){
@@ -212,12 +219,13 @@ function main() {
 
     load_config "$envFilePath" "$basePath"
     validate_config
-    #env_install
+    env_install
     folder_generate_root
     env_config
     folder_generate_all
     gradle_generate
     config_generate
+    code_generate
     docs_generate
     write_final_congig
 }
@@ -288,12 +296,15 @@ function _folder_generate_misc(){
     mkdir -p "${PROJ_PATH}/gradle"
 
     # misc
-    mkdir -p $PROJ_PATH/{doc,config,scripts}
+    mkdir -p $PROJ_PATH/{docs,config,scripts}
 }
 
 function _generate_misc_config(){
     #template:.gitignore
-    _gen_from_template .gitignore "$PROJ_PATH"
+    _gen_from_template .gitignore "$PROJ_PATH" ".gitignore"
+
+    #template:.gitattributes
+    _gen_from_template .gitattributes "$PROJ_PATH" ".gitattributes"
 
     #template:Makefile
     _gen_from_template Makefile "$PROJ_PATH"
@@ -301,13 +312,16 @@ function _generate_misc_config(){
 
 function _generate_gradle(){
     #template:settings.gradle.kts
-    _gen_from_template settings.gradle.kts "$PROJ_PATH"
+    _gen_from_template settings.gradle.kts "$PROJ_PATH" "gradle/settings.gradle.kts"
 
-    #template:gradle.properties
-    _gen_from_template gradle.properties "$PROJ_PATH"
+    #template:gradle.properties 
+    _gen_from_template gradle.properties "$PROJ_PATH" "gradle/gradle.properties"
 
     #template:libs.versions.toml
-    _gen_from_template libs.versions.toml "$PROJ_PATH/gradle"
+    _gen_from_template libs.versions.toml "$PROJ_PATH/gradle" "gradle/libs.versions.toml"
+
+    #template:build.gradle.kts
+    _gen_from_template build.gradle.kts "$PROJ_PATH" #"gradle/build.gradle.kts"
 
     _gradle_wrapper
 }
@@ -318,12 +332,26 @@ function _generate_license(){
     _gen_from_template LICENSE "$PROJ_PATH" "license/$_lic"
 }
 
+function _generate_sample_code(){
+    local _mainPath=$(_get_source_main)
+    local _testPath=$(_get_source_test)
+
+    #template:Main.kt
+    _gen_from_template Main.kt "$_mainPath" #"code/Main.kt"
+
+    #template:Utils.kt
+    _gen_from_template Utils.kt "$_mainPath" #"code/Utils.kt"
+
+    #template:UtilsTest.kt
+    _gen_from_template UtilsTest.kt "$_testPath" #"code/UtilsTest.kt"
+}
+
 function _generate_docs(){
     #template:README.md
-    _gen_from_template README.md "$PROJ_PATH"
+    _gen_from_template README.md "$PROJ_PATH" "docs/README.md"
 
     #template:TODO.md
-    _gen_from_template TODO.md "$PROJ_PATH/doc"
+    _gen_from_template TODO.md "$PROJ_PATH/docs" "docs/TODO.md"
 }
 
 function _gen_from_template(){
@@ -333,14 +361,26 @@ function _gen_from_template(){
     local _filePath=${_basePath}/${_file}
     if [ ! -e ${_filePath} ]; then
         common::log "generating ${_file} : ${_filePath}"
-        touch ${_filePath}
+        if [ ! -z "$3" ]; then
+            local _url=$__BASETMPL/$3
+            common::log "sourcing from template: $_url"
+            curl -s $_url | envsubst > ${_filePath}
+        else
+            touch ${_filePath}
+        fi
     fi
+}
 
-    if [ ! -z "$3" ]; then
-        local _url=$__BASETMPL/$3
-        common::log "sourcing from template: $_url"
-        curl -s $_url | envsubst > ${_filePath}
-    fi
+function _get_source_main(){
+    local _base=$PROJ_PATH/$PROJ_NAME
+    local _projFolder=$(echo $PROJ_GROUP | tr . /)
+    echo ${_base}/src/main/kotlin/${_projFolder}
+}
+
+function _get_source_test(){
+    local _base=$PROJ_PATH/$PROJ_NAME
+    local _projFolder=$(echo $PROJ_GROUP | tr . /)
+    echo ${_base}/src/main/kotlin/${_projFolder}
 }
 
 _init
